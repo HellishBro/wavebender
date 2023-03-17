@@ -37,24 +37,33 @@ __classifiers__ = [
     'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis'
 ]
 
+def count_(start=0, step=1, end=None):
+    if end:
+        n = start
+        while n < end:
+            yield n
+            n += step
+    else:
+        return count(start, step)
+
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
 
 def sine_wave(frequency=440.0, framerate=44100, amplitude=0.5,
-        skip_frame=0):
+        skip_frame=0, length=None):
     '''
-    Generate a sine wave at a given frequency of infinite length.
+    Generate a sine wave at a given frequency of `length` length.
     '''
     if amplitude > 1.0: amplitude = 1.0
     if amplitude < 0.0: amplitude = 0.0
-    for i in count(skip_frame):
+    for i in count_(skip_frame, end=length):
         sine = math.sin(2.0 * math.pi * float(frequency) * (float(i) / float(framerate)))
         yield float(amplitude) * sine
 
-def square_wave(frequency=440.0, framerate=44100, amplitude=0.5):
-    for s in sine_wave(frequency, framerate, amplitude):
+def square_wave(frequency=440.0, framerate=44100, amplitude=0.5, length=None):
+    for s in sine_wave(frequency, framerate, amplitude, length=length):
         if s > 0:
             yield amplitude
         elif s < 0:
@@ -65,13 +74,18 @@ def square_wave(frequency=440.0, framerate=44100, amplitude=0.5):
 def damped_wave(frequency=440.0, framerate=44100, amplitude=0.5, length=44100):
     if amplitude > 1.0: amplitude = 1.0
     if amplitude < 0.0: amplitude = 0.0
-    return (math.exp(-(float(i%length)/float(framerate))) * s for i, s in enumerate(sine_wave(frequency, framerate, amplitude)))
+    return (math.exp(-(float(i%length)/float(framerate))) * s for i, s in enumerate(sine_wave(frequency, framerate, amplitude, length=length)))
 
-def white_noise(amplitude=0.5):
+def saw_wave(frequency=440.0, framerate=44100, amplitude=0.5, length=None):
+    for s in sine_wave(frequency, framerate, amplitude, length=length):
+        s = (s * 2.0 / math.pi) - 1.0
+        yield amplitude * s
+
+def white_noise(amplitude=0.5, length=None):
     '''
     Generate random samples.
     '''
-    return (float(amplitude) * random.uniform(-1, 1) for i in count(0))
+    return (float(amplitude) * random.uniform(-1, 1) for i in count_(0, end=length))
 
 def compute_samples(channels, nsamples=None):
     '''
